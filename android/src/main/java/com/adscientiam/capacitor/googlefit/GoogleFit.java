@@ -269,6 +269,8 @@ public class GoogleFit extends Plugin {
     Date endDate = f.parse(endTime);
     long start = startDate.getTime();
     long end = endDate.getTime();
+    steps = calories = 0;
+    distances = 0;
 
     DataReadRequest readRequest = new DataReadRequest.Builder()
       .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
