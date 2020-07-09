@@ -5,6 +5,7 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 import android.util.Log;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.NativePlugin;
 import com.getcapacitor.Plugin;
@@ -331,7 +332,7 @@ public class GoogleFit extends Plugin {
     GoogleSignInAccount account = getAccount();
     String startTime = call.getString("startTime");
     String endTime = call.getString("endTime");
-    String type = call.getString("type");
+    final String type = call.getString("type");
 
     if(!call.getData().has("startTime")){
       call.reject("Must provide a start time");
