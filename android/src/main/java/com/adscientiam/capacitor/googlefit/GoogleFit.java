@@ -327,6 +327,84 @@ public class GoogleFit extends Plugin {
   }
 
   @PluginMethod()
+  public void getAggregatedDailyHistory(final PluginCall call) throws ParseException {
+    GoogleSignInAccount account = getAccount();
+    String startTime = call.getString("startTime");
+    String endTime = call.getString("endTime");
+    String type = call.getString("type");
+
+    if(!call.getData().has("startTime")){
+      call.reject("Must provide a start time");
+      return;
+    }
+
+    if(!call.getData().has("type")){
+      call.reject("Must provide a valid type");
+      return;
+    }
+
+    SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    Date startDate = f.parse(startTime);
+    Date endDate = f.parse(endTime);
+    long start = startDate.getTime();
+    long end = endDate.getTime();
+    final JSArray dailyResults = new JSArray();
+
+    DataReadRequest readRequest = new DataReadRequest.Builder()
+      .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
+      .aggregate(DataType.TYPE_DISTANCE_DELTA, DataType.TYPE_DISTANCE_DELTA)
+      .aggregate(DataType.TYPE_ACTIVITY_SEGMENT, DataType.AGGREGATE_ACTIVITY_SUMMARY)
+      .aggregate(DataType.TYPE_CALORIES_EXPENDED, DataType.AGGREGATE_CALORIES_EXPENDED)
+      .bucketByTime(1, TimeUnit.DAYS)
+      .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+      .enableServerQueries()
+      .build();
+
+    try {
+      Fitness.getHistoryClient(getActivity(), account).readData(readRequest)
+        .addOnSuccessListener(new OnSuccessListener<DataReadResponse>() {
+          @Override
+          public void onSuccess(DataReadResponse dataReadResponse) {
+            // Used for aggregated data
+            if (dataReadResponse.getBuckets().size() > 0) {
+              for (Bucket bucket : dataReadResponse.getBuckets()) {
+                List<DataSet> dataSets = bucket.getDataSets();
+                for (DataSet dataSet : dataSets) {
+                  JSObject extractedSteps = extractDataset(dataSet, type);
+                  try {
+                    if ((Float)extractedSteps.get("count") > 0) {
+                      dailyResults.put(extractedSteps);
+                    }
+                  } catch (JSONException e) {
+                    e.printStackTrace();
+                  }
+                }
+              }
+            }
+          }
+        })
+        .addOnFailureListener(new OnFailureListener() {
+          @Override
+          public void onFailure(@NonNull Exception e) {
+            JSObject result = new JSObject();
+            Log.i(TAG, e.getMessage());
+            call.reject(e.getMessage());
+          }
+        }).addOnCompleteListener(new OnCompleteListener<DataReadResponse>() {
+        @Override
+        public void onComplete(@NonNull Task<DataReadResponse> task) {
+          JSObject result = new JSObject();
+          result.put("resultData", dailyResults);
+          call.resolve(result);
+        }
+      });
+    } catch(NullPointerException e) {
+      call.reject("Permission not granted");
+      return;
+    }
+  }
+
+  @PluginMethod()
   public void getHistoryActivity(final PluginCall call) throws ParseException{
     GoogleSignInAccount account = getAccount();
     final JSONObject activityObj = new JSONObject();
@@ -396,6 +474,52 @@ public class GoogleFit extends Plugin {
     Calendar cal = Calendar.getInstance();
     cal.setTimeInMillis(dateLong);
     return df.format(cal.getTime());
+  }
+
+  private JSObject extractDataset(DataSet dataSet, String type) {
+    Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
+    DateFormat dateFormat = getTimeInstance();
+    Float total = Float.valueOf(0);
+    Date date = null;
+    JSObject result = new JSObject();
+
+    for (DataPoint dp : dataSet.getDataPoints()) {
+      Log.i(TAG, "Data point:");
+      Log.i(TAG, "\tType: " + dp.getDataType().getName());
+      Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
+      Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
+
+      for (Field field : dp.getDataType().getFields()) {
+        Log.i(TAG, "\tField: " + field.getName() + " Value: " + dp.getValue(field));
+        if (!type.equals(field.getName())) {
+          continue;
+        }
+        date = new Date(dp.getEndTime(TimeUnit.MILLISECONDS));
+        switch (field.getName()) {
+          case "weight":
+            total = dp.getValue(Field.FIELD_WEIGHT).asFloat();
+            break;
+          case "height":
+            total = dp.getValue(Field.FIELD_HEIGHT).asFloat() * 100;
+            break;
+          case "steps":
+            total += dp.getValue(Field.FIELD_STEPS).asInt();
+            break;
+          case "calories":
+            total += (int) dp.getValue(Field.FIELD_CALORIES).asFloat();
+            break;
+          case "distances":
+            total += (dp.getValue(Field.FIELD_DISTANCE).asFloat()) / 1000;
+            break;
+          default:
+            break;
+        }
+      }
+
+    }
+    result.put("count", total);
+    result.put("date", date);
+    return result;
   }
 
   private void showDataSet(DataSet dataSet) {
