@@ -27,6 +27,13 @@ export interface GoogleFitPlugin {
   getHistory(): Promise<any>;
 
   /**
+   * Get aggregated history for type
+   * @returns {Promise}
+   * @resolve AccountData
+   */
+  getAggregatedDailyHistory(): Promise<any>;
+
+  /**
    * Get history activity
    * @returns {Promise}
    * @resolve AccountData
