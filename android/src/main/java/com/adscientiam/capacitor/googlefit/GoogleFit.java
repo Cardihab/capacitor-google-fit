@@ -214,13 +214,6 @@ public class GoogleFit extends Plugin {
             return null;
         }
 
-  @PluginMethod()
-  public void getHistoryActivity(final PluginCall call) throws ParseException{
-    GoogleSignInAccount account = getAccount();
-    final JSONObject activityObj = new JSONObject();
-    String startTime = call.getString("startTime");
-    String endTime = call.getString("endTime");
-
         DataReadRequest readRequest = new DataReadRequest.Builder()
                 .aggregate(DataType.TYPE_DISTANCE_DELTA)
                 .aggregate(DataType.AGGREGATE_DISTANCE_DELTA)
@@ -294,7 +287,7 @@ public class GoogleFit extends Plugin {
         }
     }
       
-    @PluginMethod()
+  @PluginMethod()
   public void getAggregatedDailyHistory(final PluginCall call) throws ParseException {
     GoogleSignInAccount account = getAccount();
     String startTime = call.getString("startTime");
