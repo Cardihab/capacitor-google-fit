@@ -4,13 +4,6 @@ declare module "@capacitor/core" {
   }
 }
 
-class AccountData {
-  displayName: string;
-  email: string;
-  weight: number;
-  height: number
-}
-
 export interface GoogleFitPlugin {
   /**
    * Connect to Google Fit
@@ -20,18 +13,11 @@ export interface GoogleFitPlugin {
   connectToGoogleFit(): Promise<void>;
 
   /**
-   * Get account data
+   * Returns wether the permissions are ok or not
    * @returns {Promise}
-   * @resolve AccountData
+   * @resolve any
    */
-  getAccountData(): Promise<AccountData>;
-
-  /**
-   * Get today data
-   * @returns {Promise}
-   * @resolve AccountData
-   */
-  getTodayData(): Promise<any>;
+  isAllowed(): Promise<any>;
 
   /**
    * Get history

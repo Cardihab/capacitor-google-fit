@@ -4,8 +4,7 @@ Capacitor plugin to retrieve data from Google Fit
 ### Install
 ```
 npm i --save capacitor-google-fit
-npx cap update
-
+npx cap sync
 ```
 ### Android requirement
 In order for your app to communicate properly with the Google Fitness API, you need to provide the SHA1 sum of the certificate used for signing your application to Google. This will enable the GoogleFit plugin to communicate with the Fit application in each smartphone where the application is installed.
@@ -55,6 +54,8 @@ An OAuth 2.0 Client ID is a string of characters, something like this:
 ### Set up in Android
 Register plugin inside your MainActivity.onCreate
 ```
+import com.adscientiam.capacitor.googlefit.GoogleFit;
+
 this.init(savedInstanceState, new ArrayList<Class<? extends Plugin>>() {{
   add(GoogleFit.class);
 }});
@@ -64,7 +65,6 @@ this.init(savedInstanceState, new ArrayList<Class<? extends Plugin>>() {{
 ```
 import { Plugins } from '@capacitor/core';
 const { GoogleFit } = Plugins;
-
 ```
 
 ### Supported data types :
@@ -94,16 +94,14 @@ Example:
 ```
   async getHistory() {
     const today = new Date();
-    const lastWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
-    this.startDate = lastWeek.toDateString();
-    this.endDate = today.toDateString();
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
     const result = await GoogleFit.getHistory({
-      startTime: this.startDate,
-      endTime: this.endDate
+      startTime: lastWeek,
+      endTime: today
     });
     console.log(result);
-  }
-    
+  } 
 ```
 
 #### getHistoryActivity()
@@ -111,29 +109,3 @@ Same as getHistory() method but this time to retrieve activities
 Returned objects contain a set of fixed fields for each activity:
 - startDate: {type: String} a date indicating when an activity starts
 - endDate: {type: String} a date indicating when an activity ends
-
-#### getAccountData()
-Methode to get user informations as shown in Google Fit profile page :
-```
-  async getAccountData() {
-      let result = await GoogleFit.getAccountData();
-      console.log(result);
-      this.displayName = result.displayName;
-      this.email = result.email;
-      this.weight = result.weight;
-      this.height = result.height;
-  }
-```
-
-#### getTodayData()
-Method to get today's data such as total steps, calories and distances travelled.
-```
-  async getTodayData() {
-    let result =  await GoogleFit.getTodayData();
-    console.log(result);
-    this.todayStep = result.todayStep;
-    this.todayCal = result.todayCal;
-    this.todayDist = result.todayDist;
-  }
-```
-
